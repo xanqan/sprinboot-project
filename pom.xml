@@ -12,6 +12,7 @@
     <modules>
         <module>project-admin</module>
         <module>project-common</module>
+        <module>project-mbg</module>
         <module>project-security</module>
     </modules>
 
