@@ -4,9 +4,9 @@ spring:
   # Datasource Config
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://121.196.210.13:3306/project
-    username: project
-    password: 123456
+    url: jdbc:mysql://us-east.connect.psdb.cloud/project?sslMode=VERIFY_IDENTITY
+    username: 5t6tq3hvlilkiwcollcd
+    password: pscale_pw_KKyIzFh7CL2QDzU5x8ugxs7F7y1lpXMEvn4aSvBsco4
     druid:
       initial-size: 5
       min-idle: 10

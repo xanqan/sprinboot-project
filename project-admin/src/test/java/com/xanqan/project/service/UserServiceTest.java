@@ -22,7 +22,7 @@ public class UserServiceTest {
     @Test
     public void testAddUser() {
         User user = new User();
-        user.setUserName("demo3");
+        user.setUserName("demo2");
         user.setPassword("123456");
         int result = userAdminService.userRegister(user.getUserName(), user.getPassword());
         log.info("result = " + result);

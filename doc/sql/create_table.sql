@@ -7,7 +7,8 @@ create table user
 (
     id        int auto_increment comment 'id'
         primary key,
-    user_name varchar(255) null comment '用户名'
+    user_name varchar(255) null comment '用户名',
+    password varchar(512) null comment '密码'
 )
     comment '用户';
 
@@ -31,8 +32,8 @@ create table user_permission
     comment '用户权限';
 
 # both set password 123456
-INSERT INTO user (id, user_name, password) VALUES (1, 'demo', '$2a$10$KrCaa8a0Hcig8kRWXYHakubmIjQCaE7SKU.Qwd/7gMnjiXWC1DT0i');
-INSERT INTO project.user (id, user_name, password) VALUES (2, 'demo1', '$2a$10$GQkKx551nr7wQNwt2JTfjO5ayKCoFVpyHvNiyHXbG3iXxBd1GrP8q');
+INSERT INTO user (user_name, password) VALUES ('demo', '$2a$10$KrCaa8a0Hcig8kRWXYHakubmIjQCaE7SKU.Qwd/7gMnjiXWC1DT0i');
+INSERT INTO project.user (user_name, password) VALUES ('demo1', '$2a$10$GQkKx551nr7wQNwt2JTfjO5ayKCoFVpyHvNiyHXbG3iXxBd1GrP8q');
 
 INSERT INTO permission (id, permission_name) VALUES (1, 'permission1');
 INSERT INTO permission (id, permission_name) VALUES (2, 'permission2');
