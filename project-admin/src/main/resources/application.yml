@@ -1,24 +1,32 @@
-spring:
-  application:
-    name: project-admin
-  # Datasource Config
-  datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://us-east.connect.psdb.cloud/project?sslMode=VERIFY_IDENTITY
-    username: 5t6tq3hvlilkiwcollcd
-    password: pscale_pw_KKyIzFh7CL2QDzU5x8ugxs7F7y1lpXMEvn4aSvBsco4
-    druid:
-      initial-size: 5
-      min-idle: 10
-      max-active: 20
 server:
   port: 8080
   error:
     include-message: always
+
+spring:
+  application:
+    name: project-admin
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://121.196.210.13:3306/XXXX
+    username: XXXXXX
+    password: XXXXXX
+    druid:
+      initial-size: 5
+      min-idle: 10
+      max-active: 20
+
 springfox:
   documentation:
     swagger-ui:
       enabled: true
+
+jwt:
+  tokenHead: Bearer
+  tokenHeader: Authorization
+  secret: asdfgh
+  expireTime: 86400
+  justTime: 1800
 
 secure:
   ignored:
@@ -37,4 +45,3 @@ secure:
       - /sso/**
       - /home/**
       - /user/login
-      - /user/register

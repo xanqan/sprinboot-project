@@ -2,22 +2,28 @@ package com.xanqan.project.service.impl;
 
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xanqan.project.common.ResultCode;
 import com.xanqan.project.exception.BusinessException;
+import com.xanqan.project.mapper.PermissionMapper;
 import com.xanqan.project.mapper.UserMapper;
+import com.xanqan.project.model.domain.Permission;
 import com.xanqan.project.model.domain.User;
+import com.xanqan.project.model.domain.UserPermission;
+import com.xanqan.project.model.vo.LoginVo;
+import com.xanqan.project.security.model.UserSecurity;
 import com.xanqan.project.security.util.JwtTokenUtil;
-import com.xanqan.project.service.Impl.UserServiceImpl;
-import com.xanqan.project.service.UserAdminService;
+import com.xanqan.project.service.UserPermissionService;
+import com.xanqan.project.service.UserService;
+import org.springframework.context.annotation.Primary;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import java.util.regex.Matcher;
+import java.util.List;
 import java.util.regex.Pattern;
 
 /**
@@ -26,23 +32,43 @@ import java.util.regex.Pattern;
  * @author xanqan
  */
 @Service
-public class UserAdminServiceImpl extends UserServiceImpl implements UserAdminService {
+@Primary
+public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
     @Resource
-    private UserMapper userMapper;
+    private PermissionMapper permissionMapper;
     @Resource
     private PasswordEncoder passwordEncoder;
     @Resource
     private UserDetailsService userDetailsService;
     @Resource
     private JwtTokenUtil jwtTokenUtil;
+    @Resource
+    private UserPermissionService userPermissionService;
 
-    /** 用户账号最小位数 */
+    /**
+     * 用户账号最小位数
+     */
     public static final int MIN_USERNAME = 4;
-    /** 用户密码最小位数 */
+    /**
+     * 用户密码最小位数
+     */
     public static final int MIN_PASSWORD = 6;
+    /**
+     * 用户密码最小位数
+     */
+    public static final Pattern PATTERN = Pattern.compile("^[\\u4E00-\\u9FA5A-Za-z0-9_]+$");
+
+    public static boolean pattern(String str) {
+        return !PATTERN.matcher(str).matches();
+    }
 
     @Override
-    public int userRegister(String userName, String password) {
+    public List<Permission> getUserPermissionsById(int id) {
+        return permissionMapper.getUserPermissionsById(id);
+    }
+
+    @Override
+    public boolean userRegister(String userName, String password) {
         // 校验
         if (StrUtil.hasBlank(userName, password)) {
             throw new BusinessException(ResultCode.PARAMS_ERROR, "参数为空");
@@ -55,16 +81,13 @@ public class UserAdminServiceImpl extends UserServiceImpl implements UserAdminSe
         }
 
         // 账号不能包含特殊字符
-        String validPattern = "[`~!@#$%^&*()+=|{}':;',\\\\\\\\[\\\\\\\\].<>/?~！@#￥%……&*（）——+|{}【】‘；：”“’。，、？]";
-        Matcher matcher = Pattern.compile(validPattern).matcher(userName);
-        if (matcher.find()) {
+        if (pattern(userName)) {
             throw new BusinessException(ResultCode.PARAMS_ERROR, "账号包含特殊字符");
         }
 
         // 账号不能重复
-        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("user_name", userName);
-        Long count = userMapper.selectCount(queryWrapper);
+        long count = this.count(new QueryWrapper<User>()
+                .eq("name", userName));
         if (count > 0) {
             throw new BusinessException(ResultCode.PARAMS_ERROR, "账号重复");
         }
@@ -74,17 +97,22 @@ public class UserAdminServiceImpl extends UserServiceImpl implements UserAdminSe
 
         // 插入数据
         User user = new User();
-        user.setUserName(userName);
+        user.setName(userName);
         user.setPassword(encodePassword);
+        user.setSizeMax(5242880L);
         boolean saveResult = this.save(user);
         if (!saveResult) {
             throw new BusinessException(ResultCode.FAILED, "用户插入失败");
         }
-        return user.getId();
+        UserPermission userPermission = new UserPermission();
+        userPermission.setUserId(user.getId());
+        userPermission.setPermissionId(1);
+        userPermissionService.save(userPermission);
+        return true;
     }
 
     @Override
-    public String userLogin(String userName, String password) {
+    public LoginVo userLogin(String userName, String password) {
         // 校验
         if (StrUtil.hasBlank(userName, password)) {
             throw new BusinessException(ResultCode.PARAMS_ERROR, "参数为空");
@@ -97,23 +125,26 @@ public class UserAdminServiceImpl extends UserServiceImpl implements UserAdminSe
         }
 
         // 账号不能包含特殊字符
-        String validPattern = "[`~!@#$%^&*()+=|{}':;',\\\\\\\\[\\\\\\\\].<>/?~！@#￥%……&*（）——+|{}【】‘；：”“’。，、？]";
-        Matcher matcher = Pattern.compile(validPattern).matcher(userName);
-        if (matcher.find()) {
+        if (pattern(userName)) {
             throw new BusinessException(ResultCode.PARAMS_ERROR, "账号包含特殊字符");
         }
 
         // 对密码
-        UserDetails userDetails = userDetailsService.loadUserByUsername(userName);
+        UserSecurity userDetails = (UserSecurity) userDetailsService.loadUserByUsername(userName);
+        if (!userDetails.isEnabled()) {
+            throw new BusinessException(ResultCode.PARAMS_ERROR, "用户已禁用");
+        }
         if (!passwordEncoder.matches(password, userDetails.getPassword())) {
             throw new BusinessException(ResultCode.PARAMS_ERROR, "密码错误");
         }
+        // 更新security登录用户对象
         UsernamePasswordAuthenticationToken authenticationToken =
                 new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+        // 将authenticationToken放入spring security全局中
         SecurityContextHolder.getContext().setAuthentication(authenticationToken);
-
-        return jwtTokenUtil.generateToken(userDetails);
+        LoginVo loginVo = new LoginVo();
+        loginVo.setToken(jwtTokenUtil.generateToken(userDetails));
+        loginVo.setIsAdmin(UserSecurity.getUser().getIsAdmin());
+        return loginVo;
     }
-
-
 }

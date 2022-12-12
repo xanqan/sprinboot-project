@@ -1,10 +1,14 @@
-package com.xanqan.project.model.dto;
+package com.xanqan.project.security.model;
 
 
+import com.xanqan.project.common.ResultCode;
+import com.xanqan.project.exception.BusinessException;
 import com.xanqan.project.model.domain.Permission;
 import com.xanqan.project.model.domain.User;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
@@ -12,7 +16,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * SpringSecurity需要的用户详情
+ * SpringSecurity 需要的用户详情封装类
  *
  * @author xanqan
  */
@@ -27,11 +31,24 @@ public class UserSecurity implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        //返回当前用户的权限
+        //返回当前用户的权限列表
         return permissionList.stream()
-                .filter(permission -> permission.getPermissionName()!=null)
-                .map(permission ->new SimpleGrantedAuthority(permission.getPermissionName()))
+                .filter(permission -> permission.getName() != null)
+                .map(permission -> new SimpleGrantedAuthority(permission.getName()))
                 .collect(Collectors.toList());
+    }
+
+    public User getUser0() {
+        return user;
+    }
+
+    public static User getUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null) {
+            throw new BusinessException(ResultCode.NO_AUTH, "没有登录");
+        }
+        Object principal = authentication.getPrincipal();
+        return ((UserSecurity) principal).getUser0();
     }
 
     @Override
@@ -41,7 +58,7 @@ public class UserSecurity implements UserDetails {
 
     @Override
     public String getUsername() {
-        return user.getUserName();
+        return user.getName();
     }
 
     @Override
@@ -61,6 +78,6 @@ public class UserSecurity implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return true;
+        return user.getStatus() == 1;
     }
 }

@@ -1,14 +1,15 @@
-spring:
-  # Datasource Config
-  datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://121.196.210.13:3306/project
-    username: project
-    password: 123456
 server:
   port: 8080
   error:
     include-message: always
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://121.196.210.13:3306/XXXXX
+    username: XXXXXX
+    password: XXXXXX
+
 springfox:
   documentation:
     swagger-ui:

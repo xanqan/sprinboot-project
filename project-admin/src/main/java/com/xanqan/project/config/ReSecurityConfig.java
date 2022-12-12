@@ -3,12 +3,11 @@ package com.xanqan.project.config;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.xanqan.project.common.ResultCode;
 import com.xanqan.project.exception.BusinessException;
-import com.xanqan.project.mapper.UserPermissionMapper;
 import com.xanqan.project.model.domain.Permission;
 import com.xanqan.project.model.domain.User;
-import com.xanqan.project.model.dto.UserSecurity;
 import com.xanqan.project.security.config.SecurityConfig;
-import com.xanqan.project.service.UserAdminService;
+import com.xanqan.project.security.model.UserSecurity;
+import com.xanqan.project.service.UserService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
@@ -28,22 +27,19 @@ import java.util.List;
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 public class ReSecurityConfig extends SecurityConfig {
 
-    @Resource(name = "userAdminServiceImpl")
-    private UserAdminService userAdminService;
     @Resource
-    private UserPermissionMapper userPermissionMapper;
+    private UserService userService;
 
     @Bean
     @Override
     public UserDetailsService userDetailsService() {
         //获取登录用户信息
-        return username -> {
-            QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-            queryWrapper.eq("user_name", username);
-            User user = userAdminService.getOne(queryWrapper);
+        return userName -> {
+            User user = userService.getOne(new QueryWrapper<User>()
+                    .eq("name", userName));
             if (user != null) {
-                List<Permission> permissionList = userPermissionMapper.getUserPermissionList(user.getId());
-                return new UserSecurity(user,permissionList);
+                List<Permission> permissionList = userService.getUserPermissionsById(user.getId());
+                return new UserSecurity(user, permissionList);
             }
             throw new BusinessException(ResultCode.PARAMS_ERROR, "用户名或密码错误");
         };
